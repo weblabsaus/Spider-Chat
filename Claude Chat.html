@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spider Chat</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
+        .chatroom { border: 1px solid #ccc; padding: 10px; margin-bottom: 20px; }
+        .messages { height: 300px; overflow-y: scroll; border: 1px solid #ccc; padding: 10px; margin-bottom: 10px; }
+        .messageInput { width: 70%; padding: 5px; }
+        .sendButton { width: 25%; padding: 5px; }
+        #chatroomList { margin-bottom: 20px; }
+        #userProfile { margin-bottom: 20px; }
+        .message-image { max-width: 200px; max-height: 200px; }
+    </style>
+</head>
+<body>
+    <h1>Spider Chat</h1>
+    <div id="userProfile">
+        <input type="text" id="userName" placeholder="Your name" onchange="updateUserProfile()">
+        <textarea id="userBio" placeholder="Your bio" onchange="updateUserProfile()"></textarea>
+    </div>
+    <div id="connectionControls">
+        <input type="text" id="chatName" placeholder="Enter chat name">
+        <button onclick="createRoom()">Create Room</button>
+        <input type="text" id="roomId" placeholder="Enter 8-digit room ID">
+        <button onclick="joinRoom()">Join Room</button>
+    </div>
+    <div id="chatroomList"></div>
+    <button onclick="exportChats()">Export Chats</button>
+    <input type="file" id="importFile" accept=".json" onchange="importChats(event)">
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/peerjs/1.3.2/peerjs.min.js"></script>
+    <script>
+        let peers = {};
+        let chatrooms = {};
+        let userProfile = { name: 'Anonymous', bio: '' };
+
+        function generateRoomId() {
+            return Math.floor(10000000 + Math.random() * 90000000).toString();
+        }
+
+        function createRoom() {
+            const roomId = generateRoomId();
+            const chatName = document.getElementById('chatName').value || 'Unnamed Chat';
+            joinRoom(roomId, chatName);
+        }
+
+        function joinRoom(roomId = null, chatName = null) {
+            if (!roomId) roomId = document.getElementById('roomId').value;
+            if (!chatName) chatName = document.getElementById('chatName').value || 'Unnamed Chat';
+            
+            if (roomId.length !== 8) {
+                alert('Please enter a valid 8-digit room ID');
+                return;
+            }
+
+            if (chatrooms[roomId]) {
+                alert('You are already in this chat');
+                return;
+            }
+
+            const peer = new Peer();
+            peers[roomId] = peer;
+            
+            peer.on('open', (id) => {
+                console.log('My peer ID is: ' + id);
+                chatrooms[roomId] = { id: roomId, name: chatName, messages: [], connections: [] };
+                updateChatroomList();
+                saveChatsToCache();
+                
+                if (roomId !== id) {
+                    connectToPeer(roomId, peer);
+                }
+            });
+
+            peer.on('connection', (conn) => {
+                setupConnection(conn, roomId);
+            });
+        }
+
+        function connectToPeer(peerId, peer) {
+            const conn = peer.connect(peerId);
+            setupConnection(conn, peerId);
+        }
+
+        function setupConnection(conn, roomId) {
+            chatrooms[roomId].connections.push(conn);
+            
+            conn.on('open', () => {
+                conn.send({type: 'chatInfo', chatName: chatrooms[roomId].name});
+                conn.send({type: 'userProfile', profile: userProfile});
+                conn.on('data', (data) => {
+                    if (data.type === 'chatInfo') {
+                        chatrooms[roomId].name = data.chatName;
+                    } else if (data.type === 'message') {
+                        receiveMessage(roomId, data);
+                    } else if (data.type === 'userProfile') {
+                        // Handle received user profile if needed
+                    }
+                    updateChatroomList();
+                });
+            });
+        }
+
+        function sendMessage(roomId) {
+            const messageInput = document.getElementById(`messageInput-${roomId}`);
+            const imageInput = document.getElementById(`imageInput-${roomId}`);
+            const message = messageInput.value;
+            const image = imageInput.files[0];
+
+            if (message.trim() !== '' || image) {
+                const messageData = {
+                    type: 'message', 
+                    sender: userProfile.name, 
+                    content: message, 
+                    timestamp: Date.now()
+                };
+
+                if (image) {
+                    const reader = new FileReader();
+                    reader.onload = function(event) {
+                        messageData.image = event.target.result;
+                        sendMessageData(roomId, messageData);
+                    };
+                    reader.readAsDataURL(image);
+                } else {
+                    sendMessageData(roomId, messageData);
+                }
+
+                messageInput.value = '';
+                imageInput.value = '';
+            }
+        }
+
+        function sendMessageData(roomId, messageData) {
+            chatrooms[roomId].connections.forEach((conn) => conn.send(messageData));
+            receiveMessage(roomId, {...messageData, sender: 'You'});
+        }
+
+        function receiveMessage(roomId, message) {
+            chatrooms[roomId].messages.push(message);
+            displayMessage(roomId, message);
+            saveChatsToCache();
+        }
+
+        function displayMessage(roomId, message) {
+            const messagesDiv = document.getElementById(`messages-${roomId}`);
+            const messageElement = document.createElement('div');
+            const time = new Date(message.timestamp).toLocaleTimeString();
+            messageElement.innerHTML = `[${time}] ${message.sender}: ${message.content}`;
+            
+            if (message.image) {
+                const img = document.createElement('img');
+                img.src = message.image;
+                img.className = 'message-image';
+                messageElement.appendChild(img);
+            }
+
+            messagesDiv.appendChild(messageElement);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
+
+        function updateChatroomList() {
+            const chatroomListDiv = document.getElementById('chatroomList');
+            chatroomListDiv.innerHTML = '';
+            
+            for (const roomId in chatrooms) {
+                const chatroom = chatrooms[roomId];
+                const chatroomDiv = document.createElement('div');
+                chatroomDiv.className = 'chatroom';
+                chatroomDiv.innerHTML = `
+                    <h2>
+                        <input type="text" value="${chatroom.name}" onchange="updateChatName('${roomId}', this.value)">
+                        (${roomId})
+                    </h2>
+                    <div id="messages-${roomId}" class="messages"></div>
+                    <input type="text" id="messageInput-${roomId}" class="messageInput" placeholder="Type your message">
+                    <input type="file" id="imageInput-${roomId}" accept="image/*">
+                    <button class="sendButton" onclick="sendMessage('${roomId}')">Send</button>
+                `;
+                chatroomListDiv.appendChild(chatroomDiv);
+                
+                chatroom.messages.forEach(message => displayMessage(roomId, message));
+
+                const messageInput = document.getElementById(`messageInput-${roomId}`);
+                messageInput.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') {
+                        sendMessage(roomId);
+                    }
+                });
+            }
+        }
+
+        function updateChatName(roomId, newName) {
+            chatrooms[roomId].name = newName;
+            chatrooms[roomId].connections.forEach(conn => conn.send({type: 'chatInfo', chatName: newName}));
+            saveChatsToCache();
+        }
+
+        function updateUserProfile() {
+            userProfile.name = document.getElementById('userName').value || 'Anonymous';
+            userProfile.bio = document.getElementById('userBio').value;
+            for (const roomId in chatrooms) {
+                chatrooms[roomId].connections.forEach(conn => conn.send({type: 'userProfile', profile: userProfile}));
+            }
+            saveChatsToCache();
+        }
+
+        function saveChatsToCache() {
+            const chatsData = Object.values(chatrooms).map(chat => ({
+                id: chat.id,
+                name: chat.name,
+                messages: chat.messages.map(msg => ({...msg, image: null})) // Remove image data to save space
+            }));
+            localStorage.setItem('spiderChats', JSON.stringify(chatsData));
+            localStorage.setItem('spiderUserProfile', JSON.stringify(userProfile));
+        }
+
+        function loadChatsFromCache() {
+            const chatsData = JSON.parse(localStorage.getItem('spiderChats')) || [];
+            chatsData.forEach(chat => {
+                chatrooms[chat.id] = { ...chat, connections: [] };
+                joinRoom(chat.id, chat.name);
+            });
+            const savedProfile = JSON.parse(localStorage.getItem('spiderUserProfile'));
+            if (savedProfile) {
+                userProfile = savedProfile;
+                document.getElementById('userName').value = userProfile.name;
+                document.getElementById('userBio').value = userProfile.bio;
+            }
+        }
+
+        function exportChats() {
+            const exportData = {
+                chats: Object.values(chatrooms).map(chat => ({
+                    id: chat.id,
+                    name: chat.name,
+                    messages: chat.messages.map(msg => ({...msg, image: null})) // Remove image data to save space
+                })),
+                userProfile: userProfile
+            };
+            const blob = new Blob([JSON.stringify(exportData)], {type: 'application/json'});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'spider_chats.json';
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function importChats(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const importedData = JSON.parse(e.target.result);
+                    importedData.chats.forEach(chat => {
+                        if (!chatrooms[chat.id]) {
+                            joinRoom(chat.id, chat.name);
+                            chatrooms[chat.id].messages = chat.messages;
+                        }
+                    });
+                    if (importedData.userProfile) {
+                        userProfile = importedData.userProfile;
+                        document.getElementById('userName').value = userProfile.name;
+                        document.getElementById('userBio').value = userProfile.bio;
+                    }
+                    updateChatroomList();
+                    saveChatsToCache();
+                };
+                reader.readAsText(file);
+            }
+        }
+
+        // Load chats from cache on page load
+        loadChatsFromCache();
+    </script>
+</body>
+</html>
