@@ -1,4 +1,4 @@
-The official page for Spider Chat
+This is the developer documentation for Spider Chat by @codelabsaus
 
 
 
