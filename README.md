@@ -9,7 +9,7 @@ The new and revolutionary peer-to-peer private chat app
 
 
 
-[Open link](https://codelabsaus.github.io/spider-chat)
+[Open messages website](https://weblabsaus.github.io/Spider-Chat/)
 
 
 [Go Local](https://github.com/weblabsaus/Spider-Chat/releases/latest)
