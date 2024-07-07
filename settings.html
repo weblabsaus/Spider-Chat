@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spider Chat Settings</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    <style>
+        body, html {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f0f0f0;
+            color: #333;
+        }
+        .settings-container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: rgba(255, 255, 255, 0.9);
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #007aff;
+            text-align: center;
+        }
+        h2 {
+            color: #333;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 10px;
+            margin-top: 30px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input[type="text"], textarea, input[type="color"] {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        textarea {
+            height: 100px;
+            resize: vertical;
+        }
+        button {
+            background-color: #007aff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .button-group {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 20px;
+        }
+        .back-link {
+            display: inline-block;
+            margin-top: 20px;
+            color: #007aff;
+            text-decoration: none;
+        }
+        .back-link:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="settings-container">
+        <h1>Spider Chat Settings</h1>
+        
+        <h2>User Profile</h2>
+        <div class="form-group">
+            <label for="userName">Display Name:</label>
+            <input type="text" id="userName" placeholder="Your display name">
+        </div>
+        <div class="form-group">
+            <label for="userBio">Bio:</label>
+            <textarea id="userBio" placeholder="Tell us about yourself"></textarea>
+        </div>
+        
+        <h2>Appearance</h2>
+        <div class="form-group">
+            <label for="backgroundColor">Background Color:</label>
+            <input type="color" id="backgroundColor">
+        </div>
+        <div class="form-group">
+            <label for="backgroundImage">Background Image:</label>
+            <input type="file" id="backgroundImage" accept="image/*">
+        </div>
+        
+        <h2>Notifications</h2>
+        <div class="form-group">
+            <label>
+                <input type="checkbox" id="enableNotifications"> Enable Desktop Notifications
+            </label>
+        </div>
+        <div class="form-group">
+            <label>
+                <input type="checkbox" id="soundNotifications"> Enable Sound Notifications
+            </label>
+        </div>
+        
+        <h2>Privacy</h2>
+        <div class="form-group">
+            <label>
+                <input type="checkbox" id="onlineStatus"> Show Online Status
+            </label>
+        </div>
+        
+        <h2>Data Management</h2>
+        <div class="button-group">
+            <button onclick="exportChats()">Export Chats</button>
+            <input type="file" id="importFile" accept=".json" style="display: none;">
+            <button onclick="document.getElementById('importFile').click()">Import Chats</button>
+            <button onclick="clearAllData()">Clear All Data</button>
+        </div>
+        
+        <div class="button-group">
+            <button onclick="saveSettings()">Save Settings</button>
+            <button onclick="resetSettings()">Reset to Defaults</button>
+        </div>
+        
+        <a href="index.html" class="back-link"><i class="fas fa-arrow-left"></i> Back to Chat</a>
+    </div>
+
+    <script>
+        let userProfile = { name: 'Anonymous', bio: '' };
+        
+        function loadSettings() {
+            const savedProfile = JSON.parse(localStorage.getItem('spiderUserProfile'));
+            if (savedProfile) {
+                userProfile = savedProfile;
+                document.getElementById('userName').value = userProfile.name;
+                document.getElementById('userBio').value = userProfile.bio;
+            }
+            
+            const backgroundColor = localStorage.getItem('spiderBackgroundColor') || '#f0f0f0';
+            document.getElementById('backgroundColor').value = backgroundColor;
+            document.body.style.backgroundColor = backgroundColor;
+            
+            const backgroundImage = localStorage.getItem('spiderBackgroundImage');
+            if (backgroundImage) {
+                document.body.style.backgroundImage = `url(${backgroundImage})`;
+                document.body.style.backgroundSize = 'cover';
+                document.body.style.backgroundPosition = 'center';
+            }
+            
+            document.getElementById('enableNotifications').checked = JSON.parse(localStorage.getItem('spiderEnableNotifications') || 'false');
+            document.getElementById('soundNotifications').checked = JSON.parse(localStorage.getItem('spiderSoundNotifications') || 'false');
+            document.getElementById('onlineStatus').checked = JSON.parse(localStorage.getItem('spiderOnlineStatus') || 'true');
+        }
+        
+        function saveSettings() {
+            userProfile.name = document.getElementById('userName').value || 'Anonymous';
+            userProfile.bio = document.getElementById('userBio').value;
+            localStorage.setItem('spiderUserProfile', JSON.stringify(userProfile));
+            
+            const backgroundColor = document.getElementById('backgroundColor').value;
+            localStorage.setItem('spiderBackgroundColor', backgroundColor);
+            document.body.style.backgroundColor = backgroundColor;
+            
+            localStorage.setItem('spiderEnableNotifications', document.getElementById('enableNotifications').checked);
+            localStorage.setItem('spiderSoundNotifications', document.getElementById('soundNotifications').checked);
+            localStorage.setItem('spiderOnlineStatus', document.getElementById('onlineStatus').checked);
+            
+            alert('Settings saved successfully!');
+        }
+        
+        function resetSettings() {
+            if (confirm('Are you sure you want to reset all settings to default?')) {
+                localStorage.removeItem('spiderUserProfile');
+                localStorage.removeItem('spiderBackgroundColor');
+                localStorage.removeItem('spiderBackgroundImage');
+                localStorage.removeItem('spiderEnableNotifications');
+                localStorage.removeItem('spiderSoundNotifications');
+                localStorage.removeItem('spiderOnlineStatus');
+                location.reload();
+            }
+        }
+        
+        function exportChats() {
+            const chatsData = localStorage.getItem('spiderChats');
+            if (chatsData) {
+                const blob = new Blob([chatsData], {type: 'application/json'});
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'spider_chats_export.json';
+                a.click();
+                URL.revokeObjectURL(url);
+            } else {
+                alert('No chat data to export.');
+            }
+        }
+        
+        function importChats() {
+            const fileInput = document.getElementById('importFile');
+            const file = fileInput.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    try {
+                        JSON.parse(e.target.result); // Validate JSON
+                        localStorage.setItem('spiderChats', e.target.result);
+                        alert('Chats imported successfully!');
+                    } catch (error) {
+                        alert('Invalid file format. Please select a valid JSON file.');
+                    }
+                };
+                reader.readAsText(file);
+            }
+        }
+        
+        function clearAllData() {
+            if (confirm('Are you sure you want to clear all data? This action cannot be undone.')) {
+                localStorage.clear();
+                alert('All data has been cleared. The page will now reload.');
+                location.reload();
+            }
+        }
+        
+        document.getElementById('importFile').addEventListener('change', importChats);
+        document.getElementById('backgroundImage').addEventListener('change', function(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    localStorage.setItem('spiderBackgroundImage', e.target.result);
+                    document.body.style.backgroundImage = `url(${e.target.result})`;
+                    document.body.style.backgroundSize = 'cover';
+                    document.body.style.backgroundPosition = 'center';
+                    alert('Background image updated and applied.');
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        document.getElementById('backgroundColor').addEventListener('input', function(event) {
+            const color = event.target.value;
+            document.body.style.backgroundColor = color;
+        });
+        
+        window.addEventListener('load', loadSettings);
+    </script>
+</body>
+</html>

@@ -4,60 +4,180 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Spider Chat</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
     <style>
-        body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
-        .chatroom { border: 1px solid #ccc; padding: 10px; margin-bottom: 20px; }
-        .messages { height: 300px; overflow-y: scroll; border: 1px solid #ccc; padding: 10px; margin-bottom: 10px; }
-        .messageInput { width: 70%; padding: 5px; }
-        .sendButton { width: 25%; padding: 5px; }
-        #chatroomList { margin-bottom: 20px; }
-        #userProfile { margin-bottom: 20px; }
-        .message-image { max-width: 200px; max-height: 200px; }
+        body, html {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            background-color: #f0f0f0;
+            color: #333;
+        }
+        .container {
+            display: flex;
+            height: 100vh;
+        }
+        .sidebar {
+            width: 250px;
+            background-color: rgba(245, 245, 245, 0.8);
+            border-right: 1px solid #ddd;
+            padding: 20px;
+            overflow-y: auto;
+        }
+        .main-content {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+        }
+        .chat-list {
+            list-style-type: none;
+            padding: 0;
+        }
+        .chat-list li {
+            padding: 10px;
+            cursor: pointer;
+            border-radius: 8px;
+            margin-bottom: 5px;
+        }
+        .chat-list li:hover {
+            background-color: rgba(224, 224, 224, 0.8);
+        }
+        .chat-list li.active {
+            background-color: rgba(0, 122, 255, 0.8);
+            color: white;
+        }
+        .messages {
+            flex-grow: 1;
+            padding: 20px;
+            overflow-y: auto;
+            background-color: rgba(255, 255, 255, 0.8);
+        }
+        .message-input {
+            display: flex;
+            padding: 10px;
+            background-color: rgba(255, 255, 255, 0.8);
+            border-top: 1px solid #ddd;
+        }
+        .message-input input {
+            flex-grow: 1;
+            padding: 10px;
+            border: none;
+            border-radius: 20px;
+            margin-right: 10px;
+        }
+        .message-input button {
+            background-color: #007aff;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            cursor: pointer;
+        }
+        .create-room {
+            margin-bottom: 20px;
+        }
+        .create-room button {
+            width: 100%;
+            padding: 10px;
+            background-color: #007aff;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+        .landing {
+            text-align: center;
+            padding: 50px;
+            background-color: rgba(255, 255, 255, 0.8);
+        }
+        .landing h1 {
+            font-size: 3em;
+            margin-bottom: 20px;
+        }
+        .landing p {
+            font-size: 1.2em;
+            margin-bottom: 30px;
+        }
+        .settings-link {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            color: #007aff;
+            text-decoration: none;
+        }
+        .hidden {
+            display: none;
+        }
+        .room-code {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background-color: rgba(255, 255, 255, 0.8);
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-size: 14px;
+            z-index: 1000;
+        }
     </style>
 </head>
 <body>
-    <h1>Spider Chat</h1>
-    <div id="userProfile">
-        <input type="text" id="userName" placeholder="Your name" onchange="updateUserProfile()">
-        <textarea id="userBio" placeholder="Your bio" onchange="updateUserProfile()"></textarea>
+    <div class="room-code" id="roomCode"></div>
+    <div class="container">
+        <div class="sidebar">
+            <div class="create-room">
+                <button onclick="createRoom()"><i class="fas fa-plus"></i> New Chat</button>
+            </div>
+            <ul id="chatList" class="chat-list"></ul>
+        </div>
+        <div class="main-content">
+            <a href="settings.html" class="settings-link"><i class="fas fa-cog"></i> Settings</a>
+            <div id="landing" class="landing">
+                <h1>Welcome to Spider Chat</h1>
+                <p>Create a new chat or join an existing one to get started!</p>
+            </div>
+            <div id="chatRoom" class="hidden">
+                <div id="messages" class="messages"></div>
+                <div class="message-input">
+                    <input type="text" id="messageInput" placeholder="Type a message...">
+                    <input type="file" id="fileInput" style="display: none;" onchange="handleFileUpload()">
+                    <button onclick="document.getElementById('fileInput').click()"><i class="fas fa-paperclip"></i></button>
+                    <button onclick="sendMessage()"><i class="fas fa-paper-plane"></i></button>
+                </div>
+            </div>
+        </div>
     </div>
-    <div id="connectionControls">
-        <input type="text" id="chatName" placeholder="Enter chat name">
-        <button onclick="createRoom()">Create Room</button>
-        <input type="text" id="roomId" placeholder="Enter 8-digit room ID">
-        <button onclick="joinRoom()">Join Room</button>
-    </div>
-    <div id="chatroomList"></div>
-    <button onclick="exportChats()">Export Chats</button>
-    <input type="file" id="importFile" accept=".json" onchange="importChats(event)">
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/peerjs/1.3.2/peerjs.min.js"></script>
     <script>
         let peers = {};
         let chatrooms = {};
         let userProfile = { name: 'Anonymous', bio: '' };
+        let currentRoomId = null;
+        let lastRoomCreationTime = 0;
 
         function generateRoomId() {
             return Math.floor(10000000 + Math.random() * 90000000).toString();
         }
 
         function createRoom() {
+            const now = Date.now();
+            if (now - lastRoomCreationTime < 5000) {
+                alert('Please wait 5 seconds before creating a new room');
+                return;
+            }
+            lastRoomCreationTime = now;
+
             const roomId = generateRoomId();
-            const chatName = document.getElementById('chatName').value || 'Unnamed Chat';
+            const chatName = 'New Chat';
             joinRoom(roomId, chatName);
         }
 
-        function joinRoom(roomId = null, chatName = null) {
-            if (!roomId) roomId = document.getElementById('roomId').value;
-            if (!chatName) chatName = document.getElementById('chatName').value || 'Unnamed Chat';
-            
-            if (roomId.length !== 8) {
-                alert('Please enter a valid 8-digit room ID');
-                return;
-            }
-
+        function joinRoom(roomId, chatName) {
             if (chatrooms[roomId]) {
-                alert('You are already in this chat');
+                switchToRoom(roomId);
                 return;
             }
 
@@ -69,6 +189,7 @@
                 chatrooms[roomId] = { id: roomId, name: chatName, messages: [], connections: [] };
                 updateChatroomList();
                 saveChatsToCache();
+                switchToRoom(roomId);
                 
                 if (roomId !== id) {
                     connectToPeer(roomId, peer);
@@ -104,13 +225,15 @@
             });
         }
 
-        function sendMessage(roomId) {
-            const messageInput = document.getElementById(`messageInput-${roomId}`);
-            const imageInput = document.getElementById(`imageInput-${roomId}`);
-            const message = messageInput.value;
-            const image = imageInput.files[0];
+        function sendMessage() {
+            if (!currentRoomId) return;
 
-            if (message.trim() !== '' || image) {
+            const messageInput = document.getElementById('messageInput');
+            const fileInput = document.getElementById('fileInput');
+            const message = messageInput.value;
+            const file = fileInput.files[0];
+
+            if (message.trim() !== '' || file) {
                 const messageData = {
                     type: 'message', 
                     sender: userProfile.name, 
@@ -118,19 +241,28 @@
                     timestamp: Date.now()
                 };
 
-                if (image) {
+                if (file) {
+                    if (file.size > 100 * 1024 * 1024) {
+                        alert('File size must be less than 100MB');
+                        return;
+                    }
+
                     const reader = new FileReader();
                     reader.onload = function(event) {
-                        messageData.image = event.target.result;
-                        sendMessageData(roomId, messageData);
+                        messageData.file = {
+                            name: file.name,
+                            type: file.type,
+                            data: event.target.result
+                        };
+                        sendMessageData(currentRoomId, messageData);
                     };
-                    reader.readAsDataURL(image);
+                    reader.readAsDataURL(file);
                 } else {
-                    sendMessageData(roomId, messageData);
+                    sendMessageData(currentRoomId, messageData);
                 }
 
                 messageInput.value = '';
-                imageInput.value = '';
+                fileInput.value = '';
             }
         }
 
@@ -141,21 +273,25 @@
 
         function receiveMessage(roomId, message) {
             chatrooms[roomId].messages.push(message);
-            displayMessage(roomId, message);
+            if (roomId === currentRoomId) {
+                displayMessage(message);
+            }
             saveChatsToCache();
         }
 
-        function displayMessage(roomId, message) {
-            const messagesDiv = document.getElementById(`messages-${roomId}`);
+        function displayMessage(message) {
+            const messagesDiv = document.getElementById('messages');
             const messageElement = document.createElement('div');
             const time = new Date(message.timestamp).toLocaleTimeString();
             messageElement.innerHTML = `[${time}] ${message.sender}: ${message.content}`;
             
-            if (message.image) {
-                const img = document.createElement('img');
-                img.src = message.image;
-                img.className = 'message-image';
-                messageElement.appendChild(img);
+            if (message.file) {
+                const fileLink = document.createElement('a');
+                fileLink.href = message.file.data;
+                fileLink.download = message.file.name;
+                fileLink.textContent = `Download ${message.file.name}`;
+                messageElement.appendChild(document.createElement('br'));
+                messageElement.appendChild(fileLink);
             }
 
             messagesDiv.appendChild(messageElement);
@@ -163,56 +299,41 @@
         }
 
         function updateChatroomList() {
-            const chatroomListDiv = document.getElementById('chatroomList');
-            chatroomListDiv.innerHTML = '';
+            const chatList = document.getElementById('chatList');
+            chatList.innerHTML = '';
             
             for (const roomId in chatrooms) {
                 const chatroom = chatrooms[roomId];
-                const chatroomDiv = document.createElement('div');
-                chatroomDiv.className = 'chatroom';
-                chatroomDiv.innerHTML = `
-                    <h2>
-                        <input type="text" value="${chatroom.name}" onchange="updateChatName('${roomId}', this.value)">
-                        (${roomId})
-                    </h2>
-                    <div id="messages-${roomId}" class="messages"></div>
-                    <input type="text" id="messageInput-${roomId}" class="messageInput" placeholder="Type your message">
-                    <input type="file" id="imageInput-${roomId}" accept="image/*">
-                    <button class="sendButton" onclick="sendMessage('${roomId}')">Send</button>
-                `;
-                chatroomListDiv.appendChild(chatroomDiv);
-                
-                chatroom.messages.forEach(message => displayMessage(roomId, message));
-
-                const messageInput = document.getElementById(`messageInput-${roomId}`);
-                messageInput.addEventListener('keypress', (e) => {
-                    if (e.key === 'Enter') {
-                        sendMessage(roomId);
-                    }
-                });
+                const listItem = document.createElement('li');
+                listItem.textContent = chatroom.name;
+                listItem.onclick = () => switchToRoom(roomId);
+                if (roomId === currentRoomId) {
+                    listItem.classList.add('active');
+                }
+                chatList.appendChild(listItem);
             }
         }
 
-        function updateChatName(roomId, newName) {
-            chatrooms[roomId].name = newName;
-            chatrooms[roomId].connections.forEach(conn => conn.send({type: 'chatInfo', chatName: newName}));
-            saveChatsToCache();
+        function switchToRoom(roomId) {
+            currentRoomId = roomId;
+            document.getElementById('landing').classList.add('hidden');
+            document.getElementById('chatRoom').classList.remove('hidden');
+            document.getElementById('messages').innerHTML = '';
+            chatrooms[roomId].messages.forEach(displayMessage);
+            updateChatroomList();
+            updateRoomCode(roomId);
         }
 
-        function updateUserProfile() {
-            userProfile.name = document.getElementById('userName').value || 'Anonymous';
-            userProfile.bio = document.getElementById('userBio').value;
-            for (const roomId in chatrooms) {
-                chatrooms[roomId].connections.forEach(conn => conn.send({type: 'userProfile', profile: userProfile}));
-            }
-            saveChatsToCache();
+        function updateRoomCode(roomId) {
+            const roomCodeElement = document.getElementById('roomCode');
+            roomCodeElement.textContent = `Room Code: ${roomId}`;
         }
 
         function saveChatsToCache() {
             const chatsData = Object.values(chatrooms).map(chat => ({
                 id: chat.id,
                 name: chat.name,
-                messages: chat.messages.map(msg => ({...msg, image: null})) // Remove image data to save space
+                messages: chat.messages.map(msg => ({...msg, file: null})) // Remove file data to save space
             }));
             localStorage.setItem('spiderChats', JSON.stringify(chatsData));
             localStorage.setItem('spiderUserProfile', JSON.stringify(userProfile));
@@ -227,55 +348,78 @@
             const savedProfile = JSON.parse(localStorage.getItem('spiderUserProfile'));
             if (savedProfile) {
                 userProfile = savedProfile;
-                document.getElementById('userName').value = userProfile.name;
-                document.getElementById('userBio').value = userProfile.bio;
             }
         }
 
-        function exportChats() {
-            const exportData = {
-                chats: Object.values(chatrooms).map(chat => ({
-                    id: chat.id,
-                    name: chat.name,
-                    messages: chat.messages.map(msg => ({...msg, image: null})) // Remove image data to save space
-                })),
-                userProfile: userProfile
-            };
-            const blob = new Blob([JSON.stringify(exportData)], {type: 'application/json'});
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'spider_chats.json';
-            a.click();
-            URL.revokeObjectURL(url);
-        }
-
-        function importChats(event) {
-            const file = event.target.files[0];
+        function handleFileUpload() {
+            const fileInput = document.getElementById('fileInput');
+            const file = fileInput.files[0];
             if (file) {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    const importedData = JSON.parse(e.target.result);
-                    importedData.chats.forEach(chat => {
-                        if (!chatrooms[chat.id]) {
-                            joinRoom(chat.id, chat.name);
-                            chatrooms[chat.id].messages = chat.messages;
-                        }
-                    });
-                    if (importedData.userProfile) {
-                        userProfile = importedData.userProfile;
-                        document.getElementById('userName').value = userProfile.name;
-                        document.getElementById('userBio').value = userProfile.bio;
-                    }
-                    updateChatroomList();
-                    saveChatsToCache();
-                };
-                reader.readAsText(file);
+                if (file.size > 100 * 1024 * 1024) {
+                    alert('File size must be less than 100MB');
+                    fileInput.value = '';
+                    return;
+                }
+                sendMessage(); // This will handle the file upload along with any text message
             }
         }
 
-        // Load chats from cache on page load
-        loadChatsFromCache();
+        function updateBackgroundFromSettings() {
+            const backgroundColor = localStorage.getItem('spiderBackgroundColor');
+            const backgroundImage = localStorage.getItem('spiderBackgroundImage');
+
+            if (backgroundColor) {
+                document.body.style.backgroundColor = backgroundColor;
+            }
+
+            if (backgroundImage) {
+                document.body.style.backgroundImage = `url(${backgroundImage})`;
+                document.body.style.backgroundSize = 'cover';
+                document.body.style.backgroundPosition = 'center';
+            } else {
+                document.body.style.backgroundImage = 'none';
+            }
+        }
+
+        function init() {
+            loadChatsFromCache();
+            updateChatroomList();
+            updateBackgroundFromSettings();
+
+            document.getElementById('messageInput').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    sendMessage();
+                }
+            });
+
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                document.body.addEventListener(eventName, preventDefaults, false);
+            });
+
+            document.body.addEventListener('drop', handleDrop, false);
+        }
+
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+
+        function handleDrop(e) {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+
+            if (files.length > 0) {
+                document.getElementById('fileInput').files = files;
+                handleFileUpload();
+            }
+        }
+
+        window.addEventListener('load', init);
+        window.addEventListener('storage', function(e) {
+            if (e.key === 'spiderBackgroundColor' || e.key === 'spiderBackgroundImage') {
+                updateBackgroundFromSettings();
+            }
+        });
     </script>
 </body>
 </html>
