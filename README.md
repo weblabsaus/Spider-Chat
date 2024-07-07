@@ -4,7 +4,7 @@ The official page for Spider Chat
 
 The new and revolutionary peer-to-peer private chat app
 
-[Screenshot](Spider Chat.jpeg)
+![Screenshot](Spider Chat.jpeg)
 
 
 **Use**
