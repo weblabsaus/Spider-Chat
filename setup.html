@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spider Chat Setup</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    <style>
+        body, html {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            background-color: #f0f0f0;
+            color: #333;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .setup-container {
+            background-color: white;
+            padding: 40px;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            max-width: 500px;
+            width: 100%;
+        }
+        h1 {
+            color: #007aff;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .setup-step {
+            margin-bottom: 30px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input[type="text"], textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        textarea {
+            height: 100px;
+            resize: vertical;
+        }
+        button {
+            background-color: #007aff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s;
+            width: 100%;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .progress-indicator {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 30px;
+        }
+        .progress-step {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background-color: #ddd;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-weight: bold;
+            color: white;
+        }
+        .progress-step.active {
+            background-color: #007aff;
+        }
+        .progress-step.completed {
+            background-color: #28a745;
+        }
+    </style>
+</head>
+<body>
+    <div class="setup-container">
+        <h1>Welcome to Spider Chat</h1>
+        <div class="progress-indicator">
+            <div class="progress-step active" id="step1">1</div>
+            <div class="progress-step" id="step2">2</div>
+            <div class="progress-step" id="step3">3</div>
+        </div>
+        <div id="setupStep1" class="setup-step">
+            <h2>Step 1: User Profile</h2>
+            <div>
+                <label for="userName">Display Name:</label>
+                <input type="text" id="userName" placeholder="Your display name">
+            </div>
+            <div>
+                <label for="userBio">Bio:</label>
+                <textarea id="userBio" placeholder="Tell us about yourself"></textarea>
+            </div>
+            <button onclick="nextStep(2)">Next</button>
+        </div>
+        <div id="setupStep2" class="setup-step" style="display: none;">
+            <h2>Step 2: Appearance</h2>
+            <div>
+                <label for="backgroundColor">Background Color:</label>
+                <input type="color" id="backgroundColor" value="#f0f0f0">
+            </div>
+            <div>
+                <label for="backgroundImage">Background Image:</label>
+                <input type="file" id="backgroundImage" accept="image/*">
+            </div>
+            <button onclick="nextStep(3)">Next</button>
+        </div>
+        <div id="setupStep3" class="setup-step" style="display: none;">
+            <h2>Step 3: Notifications</h2>
+            <div>
+                <label>
+                    <input type="checkbox" id="enableNotifications"> Enable Desktop Notifications
+                </label>
+            </div>
+            <div>
+                <label>
+                    <input type="checkbox" id="soundNotifications"> Enable Sound Notifications
+                </label>
+            </div>
+            <button onclick="finishSetup()">Finish Setup</button>
+        </div>
+    </div>
+
+    <script>
+        let currentStep = 1;
+
+        function nextStep(step) {
+            document.getElementById(`setupStep${currentStep}`).style.display = 'none';
+            document.getElementById(`setupStep${step}`).style.display = 'block';
+            document.getElementById(`step${currentStep}`).classList.remove('active');
+            document.getElementById(`step${currentStep}`).classList.add('completed');
+            document.getElementById(`step${step}`).classList.add('active');
+            currentStep = step;
+        }
+
+        function finishSetup() {
+            // Save user profile
+            const userProfile = {
+                name: document.getElementById('userName').value || 'Anonymous',
+                bio: document.getElementById('userBio').value
+            };
+            localStorage.setItem('spiderUserProfile', JSON.stringify(userProfile));
+
+            // Save appearance settings
+            const backgroundColor = document.getElementById('backgroundColor').value;
+            localStorage.setItem('spiderBackgroundColor', backgroundColor);
+
+            const backgroundImage = document.getElementById('backgroundImage').files[0];
+            if (backgroundImage) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    localStorage.setItem('spiderBackgroundImage', e.target.result);
+                };
+                reader.readAsDataURL(backgroundImage);
+            }
+
+            // Save notification settings
+            localStorage.setItem('spiderEnableNotifications', document.getElementById('enableNotifications').checked);
+            localStorage.setItem('spiderSoundNotifications', document.getElementById('soundNotifications').checked);
+
+            // Set setup complete flag
+            localStorage.setItem('spiderSetupComplete', 'true');
+
+            // Redirect to main chat page
+            window.location.href = 'index.html';
+        }
+
+        // Apply background color changes in real-time
+        document.getElementById('backgroundColor').addEventListener('input', function(event) {
+            document.body.style.backgroundColor = event.target.value;
+        });
+
+        // Preview background image
+        document.getElementById('backgroundImage').addEventListener('change', function(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    document.body.style.backgroundImage = `url(${e.target.result})`;
+                    document.body.style.backgroundSize = 'cover';
+                    document.body.style.backgroundPosition = 'center';
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+    </script>
+</body>
+</html>

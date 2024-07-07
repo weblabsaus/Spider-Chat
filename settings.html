@@ -178,6 +178,10 @@
             localStorage.setItem('spiderSoundNotifications', document.getElementById('soundNotifications').checked);
             localStorage.setItem('spiderOnlineStatus', document.getElementById('onlineStatus').checked);
             
+            if (document.getElementById('enableNotifications').checked) {
+                requestNotificationPermission();
+            }
+            
             alert('Settings saved successfully!');
         }
         
@@ -231,6 +235,21 @@
                 localStorage.clear();
                 alert('All data has been cleared. The page will now reload.');
                 location.reload();
+            }
+        }
+        
+        function requestNotificationPermission() {
+            if (!("Notification" in window)) {
+                console.log("This browser does not support desktop notification");
+                return;
+            }
+
+            if (Notification.permission !== "granted" && Notification.permission !== "denied") {
+                Notification.requestPermission().then(function (permission) {
+                    if (permission === "granted") {
+                        console.log("Notification permission granted");
+                    }
+                });
             }
         }
         
