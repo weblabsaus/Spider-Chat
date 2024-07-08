@@ -35,6 +35,9 @@ Method 3:
 [Go Local](https://github.com/weblabsaus/Spider-Chat/releases/latest)
 
 
+[MacOS Installer](https://drive.google.com/uc?export=download&id=1VLCGA_3AxUpxNLbTN_T910tdkHlusrEk)
+
+
 [Get the chrome extension](https://drive.usercontent.google.com/download?id=1ECjEx1s0OgI_7NCAjmdsUcX4jIroa2By&export=download&authuser=0)
 
 
