@@ -1,4 +1,4 @@
-[![My Skills](https://skillicons.dev/icons?i=apple,windows,linux,html)](https://skillicons.dev)
+[![My Skills](https://skillicons.dev/icons?i=apple)](https://drive.google.com/uc?export=download&id=1VLCGA_3AxUpxNLbTN_T910tdkHlusrEk) [![My Skills](https://skillicons.dev/icons?i=windows,linux,html)](https://github.com/weblabsaus/Spider-Chat/releases/latest)
 
 
 This is the developer documentation for Spider Chat by @codelabsaus
