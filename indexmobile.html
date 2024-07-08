@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spider Chat Mobile</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    <style>
+        body, html {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            background-color: #f0f0f0;
+            color: #333;
+        }
+        .container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+        .header {
+            background-color: #007aff;
+            color: white;
+            padding: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .main-content {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+        }
+        .messages {
+            flex-grow: 1;
+            padding: 10px;
+            overflow-y: auto;
+            background-color: #fff;
+        }
+        .message-input {
+            display: flex;
+            padding: 10px;
+            background-color: #fff;
+            border-top: 1px solid #ddd;
+        }
+        .message-input input {
+            flex-grow: 1;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 20px;
+            margin-right: 10px;
+        }
+        .message-input button {
+            background-color: #007aff;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+        }
+        .room-code {
+            background-color: rgba(255, 255, 255, 0.8);
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+        .menu-button {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+        }
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: -250px;
+            width: 250px;
+            height: 100%;
+            background-color: #fff;
+            transition: left 0.3s ease;
+            z-index: 1000;
+            box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+        }
+        .sidebar.open {
+            left: 0;
+        }
+        .chat-list {
+            list-style-type: none;
+            padding: 0;
+            margin: 0;
+        }
+        .chat-list li {
+            padding: 15px;
+            border-bottom: 1px solid #eee;
+        }
+        .create-room {
+            padding: 15px;
+        }
+        .create-room button {
+            width: 100%;
+            padding: 10px;
+            background-color: #007aff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .message {
+            margin-bottom: 10px;
+            padding: 10px;
+            border-radius: 10px;
+            max-width: 70%;
+        }
+        .message.sent {
+            background-color: #007aff;
+            color: white;
+            align-self: flex-end;
+        }
+        .message.received {
+            background-color: #e5e5ea;
+            color: black;
+            align-self: flex-start;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <button class="menu-button" onclick="toggleSidebar()"><i class="fas fa-bars"></i></button>
+            <div class="room-code" id="roomCode"></div>
+            <a href="settingsmobile.html" style="color: white;"><i class="fas fa-cog"></i></a>
+        </div>
+        <div class="sidebar" id="sidebar">
+            <div class="create-room">
+                <button onclick="createRoom()"><i class="fas fa-plus"></i> New Chat</button>
+            </div>
+            <ul id="chatList" class="chat-list"></ul>
+        </div>
+        <div class="main-content">
+            <div id="messages" class="messages"></div>
+            <div class="message-input">
+                <input type="text" id="messageInput" placeholder="Type a message...">
+                <button onclick="sendMessage()"><i class="fas fa-paper-plane"></i></button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/peerjs/1.3.2/peerjs.min.js"></script>
+    <script>
+        let peer;
+        let connections = {};
+        let currentRoom = null;
+        let userName = 'Anonymous';
+
+        function initializePeer() {
+            peer = new Peer();
+            peer.on('open', (id) => {
+                console.log('My peer ID is: ' + id);
+            });
+            peer.on('connection', (conn) => {
+                handleConnection(conn);
+            });
+        }
+
+        function createRoom() {
+            currentRoom = Math.random().toString(36).substring(7);
+            document.getElementById('roomCode').textContent = `Room: ${currentRoom}`;
+            addChatToList(currentRoom);
+        }
+
+        function joinRoom() {
+            const roomId = prompt("Enter room code:");
+            if (roomId) {
+                currentRoom = roomId;
+                document.getElementById('roomCode').textContent = `Room: ${currentRoom}`;
+                const conn = peer.connect(roomId);
+                handleConnection(conn);
+                addChatToList(roomId);
+            }
+        }
+
+        function handleConnection(conn) {
+            connections[conn.peer] = conn;
+            conn.on('data', (data) => {
+                displayMessage(data, false);
+            });
+        }
+
+        function sendMessage() {
+            const messageInput = document.getElementById('messageInput');
+            const message = messageInput.value.trim();
+            if (message) {
+                const fullMessage = `${userName}: ${message}`;
+                for (let peerId in connections) {
+                    connections[peerId].send(fullMessage);
+                }
+                displayMessage(fullMessage, true);
+                messageInput.value = '';
+            }
+        }
+
+        function displayMessage(message, sent) {
+            const messagesDiv = document.getElementById('messages');
+            const messageElement = document.createElement('div');
+            messageElement.textContent = message;
+            messageElement.classList.add('message');
+            messageElement.classList.add(sent ? 'sent' : 'received');
+            messagesDiv.appendChild(messageElement);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
+
+        function addChatToList(roomId) {
+            const chatList = document.getElementById('chatList');
+            const listItem = document.createElement('li');
+            listItem.textContent = `Chat ${roomId}`;
+            listItem.onclick = () => {
+                currentRoom = roomId;
+                document.getElementById('roomCode').textContent = `Room: ${currentRoom}`;
+                toggleSidebar();
+            };
+            chatList.appendChild(listItem);
+        }
+
+        function toggleSidebar() {
+            document.getElementById('sidebar').classList.toggle('open');
+        }
+
+        window.onload = () => {
+            initializePeer();
+            const storedProfile = localStorage.getItem('spiderUserProfile');
+            if (storedProfile) {
+                const profile = JSON.parse(storedProfile);
+                userName = profile.name || 'Anonymous';
+            }
+        };
+
+        // Handle Enter key press in message input
+        document.getElementById('messageInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        });
+    </script>
+</body>
+</html>
