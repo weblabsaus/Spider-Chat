@@ -9,6 +9,8 @@ The new and revolutionary peer-to-peer private chat app
 
 
 **Downloads**
+
+
 [![My Skills](https://skillicons.dev/icons?i=apple)](https://drive.google.com/uc?export=download&id=1VLCGA_3AxUpxNLbTN_T910tdkHlusrEk) [![My Skills](https://skillicons.dev/icons?i=windows,linux,html)](https://github.com/weblabsaus/Spider-Chat/releases/latest)
 
 
