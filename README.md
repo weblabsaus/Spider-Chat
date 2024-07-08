@@ -1,3 +1,6 @@
+![Windows](https://static-00.iconduck.com/assets.00/microsoft-icon-2048x2048-xtoxrveo.png) ![MacOS](https://static-00.iconduck.com/assets.00/macos-icon-2048x2048-uavbc6sb.png) ![Linux](https://static-00.iconduck.com/assets.00/linux-icon-2048x2048-sy06t4un.png)
+
+
 This is the developer documentation for Spider Chat by @codelabsaus
 
 
